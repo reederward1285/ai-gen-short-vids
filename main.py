@@ -40,6 +40,9 @@ while counter < 100:
     for post in redditbot.post_data:
         redditbot.save_image(post)
 
+    # Create voiceover mp3 file
+
+    # Patch mp3 and mp4 together into resulting video file
     if redditbot.post_data and any(post['image_path'] for post in redditbot.post_data):
         CreateMovie.CreateMP4(redditbot.post_data, counter)
         #break
