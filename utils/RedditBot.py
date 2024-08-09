@@ -36,7 +36,7 @@ class RedditBot():
         self.post_data = []
         subreddit = self.reddit.subreddit(sub)
         posts = []
-        for submission in subreddit.top("day", limit=3):
+        for submission in subreddit.top("day", limit=10):
             if submission.stickied:
                 print("Mod Post")
             else:
@@ -46,7 +46,8 @@ class RedditBot():
                     "title": submission.title,
                     "image_path": self.get_image_url(submission),  # Get actual image URL
                     "Best_comment": submission.comments[0].body if submission.comments else "No comments",
-                    "best_reply": "MIA"  # Set a default or extract as needed
+                    "best_reply": "MIA",  # Set a default or extract as needed
+                    "selftext": submission.selftext
                 }
                 print("added post to post_data: " + str(post_data))
                 posts.append(post_data)
