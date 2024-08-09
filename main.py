@@ -9,7 +9,7 @@ Quick notes!
 """
 
 from datetime import date
-import time
+from gtts import gTTS
 from utils.CreateMovie import CreateMovie, GetDaySuffix
 from utils.RedditBot import RedditBot
 from utils.upload_video import upload_video
@@ -19,7 +19,8 @@ redditbot = RedditBot()
 counter = 1
 
 # Leave if you want to run it 24/7
-while counter < 100:
+while counter < 2:
+    voiceover_string = ""
 
     # Gets our new posts pass if image related subs. Default is memes
     posts = redditbot.get_posts("dankmemes")
@@ -40,10 +41,14 @@ while counter < 100:
     for post in redditbot.post_data:
         redditbot.save_image(post)
 
-    # Create voiceover mp3 file
-
     # Patch mp3 and mp4 together into resulting video file
     if redditbot.post_data and any(post['image_path'] for post in redditbot.post_data):
+        # Create voiceover mp3 file
+        voiceover_string = redditbot.post_data.selftext
+        language = "en"
+        voiceover = gTTS(text = voiceover_string, lang=language, slow=False)
+        voiceover.save("output-" + str(counter) + ".mp3")
+        # Create video
         CreateMovie.CreateMP4(redditbot.post_data, counter)
         #break
     else:
