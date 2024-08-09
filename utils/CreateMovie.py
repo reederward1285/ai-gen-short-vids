@@ -1,5 +1,4 @@
 from moviepy.editor import *
-import random
 import os
 from PIL import Image as PILImage
 
@@ -36,7 +35,8 @@ def add_return_comment(comment):
 class CreateMovie():
 
     @classmethod
-    def CreateMP4(cls, post_data):
+    def CreateMP4(cls, post_data, counter):
+        output_file = f"output-{counter}.mp4"
         image_paths = [post['image_path'] for post in post_data if post['image_path']]
         
         if not image_paths:
@@ -61,7 +61,7 @@ class CreateMovie():
         
         # Create video clip
         clip = ImageSequenceClip(image_paths, durations=[12]*len(image_paths))
-        clip.write_videofile('output.mp4', fps=24)
+        clip.write_videofile(output_file, fps=24)
 
 if __name__ == '__main__':
     print(TextClip.list('color'))
