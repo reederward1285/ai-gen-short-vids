@@ -1,6 +1,8 @@
-/env
+/venv
 .env
 /data
 __pycache__
 client_secrets.json
 *.json
+*.mp4
+video.mp4

@@ -1,0 +1,425 @@
+my error output 'added post to post_data: {'id': '1entyh5', 'title': 'Which ingredient will instantly make you go "nope" no matter how tasty the food seems?', 'image_path': None, 'Best_comment': 'Brains.', 'best_reply': 'MIA'}
+resulting post_data is [{'id': '1encdxf', 'title': "What's something you can admit about a company you no longer work for?", 'image_path': None, 'Best_comment': 'I used to work in the marketing team for a large recruitment company. About 99% of the jobs posted on their websites (the company owned about 35 web domains) and shared on other websites are fake. The marketing and SEO department was tasked in creating super optimized job listings, that out performed real job listings. To apply to these job listings, you would have to register an account. This would inflate our candidate database and we would have loads of CVs. The sales team would then take this information and contact companies to get them to pay to put their open vacancies on our websites, because we had one of the largest candidate databases. I remember getting so annoyed by this practice I started reporting these vacancies as fake, even on LinkedIn. But LinkedIn rejected my report saying it was legitimate. It wasn’t, and I know this because I created that fake vacancy.
+
+What makes this even more alarming, is that so many recruitment companies do this. If you want to apply for a job, you’re better off going to that companies website instead and not using a third party. I left that place and swore I would never work in recruitment again.', 'best_reply': 'MIA'}, {'id': '1enhwhm', 'title': 'What kind of sport is more likely to destroy your health rather than improve it?', 'image_path': None, 'Best_comment': 'In reality, when you get to the point of playing at a professional or semi-pro level, most sports take a crazy toll on your body.', 'best_reply': 'MIA'}, {'id': '1entyh5', 'title': 'Which ingredient will instantly make you go "nope" no matter how tasty the food seems?', 'image_path': None, 'Best_comment': 'Brains.', 'best_reply': 'MIA'}]
+Traceback (most recent call last):
+  File "/home/reeder/personal-repos/AutoTube/main.py", line 31, in <module>
+    redditbot.save_image(post)
+  File "/home/reeder/personal-repos/AutoTube/utils/RedditBot.py", line 95, in save_image
+    local_image_path = self.download_image(image_url, local_path)
+  File "/home/reeder/personal-repos/AutoTube/utils/RedditBot.py", line 77, in download_image
+    if not url.lower().endswith(('.png', '.jpg', '.jpeg', '.gif')):
+AttributeError: 'NoneType' object has no attribute 'lower''
+
+this python file ./utils/CreateMovie.py
+from moviepy.editor import *
+import random
+import os
+
+dir_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+
+def GetDaySuffix(day):
+    if day == 1 or day == 21 or day == 31:
+        return "st"
+    elif day == 2 or day == 22:
+        return "nd"
+    elif day == 3 or day == 23:
+        return "rd"
+    else:
+        return "th"
+
+dir_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+music_path = os.path.join(dir_path, "Music/")
+
+def add_return_comment(comment):
+    need_return = 30
+    new_comment = ""
+    return_added = 0
+    return_added += comment.count('\n')
+    for i, letter in enumerate(comment):
+        if i > need_return and letter == " ":
+            letter = "\n"
+            need_return += 30
+            return_added += 1
+        new_comment += letter
+    return new_comment, return_added
+        
+
+class CreateMovie():
+
+    @classmethod
+    def CreateMP4(cls, post_data):
+        image_paths = [post['image_path'] for post in post_data if post['image_path']]
+        clip = ImageSequenceClip(image_paths, durations=[12]*len(image_paths))
+        clip.write_videofile('output.mp4', fps=24)
+
+if __name__ == '__main__':
+    print(TextClip.list('color'))
+
+this python file ./utils/upload_video.py
+import httplib2
+import os
+import random
+import sys
+import time
+
+from apiclient.discovery import build
+from apiclient.errors import HttpError
+from apiclient.http import MediaFileUpload
+from oauth2client.client import flow_from_clientsecrets
+from oauth2client.file import Storage
+from oauth2client.tools import argparser, run_flow
+
+
+# Explicitly tell the underlying HTTP transport library not to retry, since
+# we are handling retry logic ourselves.
+httplib2.RETRIES = 1
+
+# Maximum number of times to retry before giving up.
+MAX_RETRIES = 10
+
+# Always retry when these exceptions are raised.
+RETRIABLE_EXCEPTIONS = (httplib2.HttpLib2Error, IOError)
+
+# Always retry when an apiclient.errors.HttpError with one of these status
+# codes is raised.
+RETRIABLE_STATUS_CODES = [500, 502, 503, 504]
+CLIENT_SECRETS_FILE = "client_secrets.json"
+
+# This OAuth 2.0 access scope allows an application to upload files to the
+# authenticated user's YouTube channel, but doesn't allow other types of access.
+YOUTUBE_UPLOAD_SCOPE = "https://www.googleapis.com/auth/youtube.upload"
+YOUTUBE_API_SERVICE_NAME = "youtube"
+YOUTUBE_API_VERSION = "v3"
+
+# This variable defines a message to display if the CLIENT_SECRETS_FILE is
+# missing.
+MISSING_CLIENT_SECRETS_MESSAGE = """
+WARNING: Please configure OAuth 2.0
+
+To make this sample run you will need to populate the client_secrets.json file
+found at:
+
+   %s
+
+with information from the API Console
+https://console.developers.google.com/
+
+For more information about the client_secrets.json file format, please visit:
+https://developers.google.com/api-client-library/python/guide/aaa_client_secrets
+""" % os.path.abspath(os.path.join(os.path.dirname(__file__),
+                                   CLIENT_SECRETS_FILE))
+
+VALID_PRIVACY_STATUSES = ("public", "private", "unlisted")
+
+
+def get_authenticated_service(args):
+  flow = flow_from_clientsecrets(CLIENT_SECRETS_FILE,
+    scope=YOUTUBE_UPLOAD_SCOPE,
+    message=MISSING_CLIENT_SECRETS_MESSAGE)
+
+  storage = Storage("%s-oauth2.json" % sys.argv[0])
+  credentials = storage.get()
+
+  if credentials is None or credentials.invalid:
+    credentials = run_flow(flow, storage, args)
+
+  return build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION,
+    http=credentials.authorize(httplib2.Http()))
+
+def initialize_upload(youtube, options):
+  tags = None
+#   if options.keywords:
+#     tags = options.keywords.split(",")
+
+  body=dict(
+    snippet=dict(
+      title=options['title'],
+      description=options['description'],
+      tags=tags,
+      #categoryId=options['category']
+    ),
+    status=dict(
+      privacyStatus=options['privacyStatus']
+    )
+  )
+
+  # Call the API's videos.insert method to create and upload the video.
+  insert_request = youtube.videos().insert(
+    part=",".join(body.keys()),
+    body=body,
+    media_body=MediaFileUpload(options['file'], chunksize=-1, resumable=True)
+  )
+
+  resumable_upload(insert_request)
+
+# This method implements an exponential backoff strategy to resume a
+# failed upload.
+def resumable_upload(insert_request):
+  response = None
+  error = None
+  retry = 0
+  while response is None:
+    try:
+      print("Uploading file...")
+      status, response = insert_request.next_chunk()
+      if response is not None:
+        if 'id' in response:
+          print("Video id '%s' was successfully uploaded." % response['id'])
+        else:
+          exit("The upload failed with an unexpected response: %s" % response)
+    except HttpError as e:
+      if e.resp.status in RETRIABLE_STATUS_CODES:
+        error = "A retriable HTTP error %d occurred:\n%s" % (e.resp.status,
+                                                             e.content)
+      else:
+        raise
+    except RETRIABLE_EXCEPTIONS as e:
+      error = "A retriable error occurred: %s" % e
+
+    if error is not None:
+      print(error)
+      retry += 1
+      if retry > MAX_RETRIES:
+        exit("No longer attempting to retry.")
+
+      max_sleep = 2 ** retry
+      sleep_seconds = random.random() * max_sleep
+      print("Sleeping %f seconds and then retrying..." % sleep_seconds)
+      time.sleep(sleep_seconds)
+
+def upload_video(video_data):
+  args = argparser.parse_args()
+  if not os.path.exists(video_data['file']):
+    exit("Please specify a valid file using the --file= parameter.")
+
+  youtube = get_authenticated_service(args)
+  try:
+    initialize_upload(youtube, video_data)
+  except HttpError as e:
+    print("An HTTP error %d occurred:\n%s" % (e.resp.status, e.content))
+
+if __name__ == '__main__':
+    video_data = {
+        "file": "video.mp4",
+        "title": "Best of memes!",
+        "description": "#shorts \n Giving you the hottest memes of the day with funny comments!",
+        "keywords":"meme,reddit",
+        "privacyStatus":"private"
+    }
+    update_video(video_data)
+
+this python file ./utils/Scalegif.py
+from PIL import Image
+
+def scale_gif(path, scale, new_path=None):
+    gif = Image.open(path)
+    if not new_path:
+        new_path = path
+    if path[-3:] == "gif":
+        old_gif_information = {
+            'loop': bool(gif.info.get('loop', 1)),
+            'duration': gif.info.get('duration', 40),
+            'background': gif.info.get('background', 223),
+            'extension': gif.info.get('extension', (b'NETSCAPE2.0')),
+            'transparency': gif.info.get('transparency', 223)
+        }
+        new_frames = get_new_frames(gif, scale)
+        save_new_gif(new_frames, old_gif_information, new_path)
+    else:
+        gif = gif.resize(scale)
+        gif.save(path)
+
+
+def get_new_frames(gif, scale):
+    new_frames = []
+    actual_frames = gif.n_frames
+    for frame in range(actual_frames):
+        gif.seek(frame)
+        new_frame = Image.new('RGBA', gif.size)
+        new_frame.paste(gif)
+        new_frame = new_frame.resize(scale, Image.ANTIALIAS)
+        new_frames.append(new_frame)
+    return new_frames
+
+def save_new_gif(new_frames, old_gif_information, new_path):
+    new_frames[0].save(new_path,
+                       save_all = True,
+                       append_images = new_frames[1:],
+                       duration = old_gif_information['duration'],
+                       loop = old_gif_information['loop'],
+                       background = old_gif_information['background'],
+                       extension = old_gif_information['extension'] ,
+                       transparency = old_gif_information['transparency'])
+
+
+if __name__ == "__main__":
+    scale_gif(f"Post-qtehpj.gif", (720,1280),"test.gif")
+
+this python file ./utils/RedditBot.py
+from datetime import date
+import os
+import praw
+from dotenv import load_dotenv
+import requests
+import json
+from PIL import Image
+from io import BytesIO
+
+load_dotenv()
+
+
+class RedditBot():
+
+    def __init__(self):
+        self.reddit = praw.Reddit(
+            client_id=os.getenv('client_id'),
+            client_secret=os.getenv('client_secret'),
+            user_agent=os.getenv('user_agent'),
+        )
+
+        dir_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+        self.data_path = os.path.join(dir_path, "data/")
+        self.post_data = []
+        self.already_posted = []
+
+        #   Check for a posted_already.json file
+        self.posted_already_path = os.path.join(
+            self.data_path, "posted_already.json")
+        if os.path.isfile(self.posted_already_path):
+            print("Loading posted_already.json from data folder.")
+            with open(self.posted_already_path, "r") as file:
+                self.already_posted = json.load(file)
+
+    def get_posts(self, sub="memes"):
+        self.post_data = []
+        subreddit = self.reddit.subreddit(sub)
+        posts = []
+        for submission in subreddit.top("day", limit=3):
+            if submission.stickied:
+                print("Mod Post")
+            else:
+                # Create a dictionary to store the required data
+                post_data = {
+                    "id": submission.id,
+                    "title": submission.title,
+                    "image_path": self.get_image_url(submission),  # Get actual image URL
+                    "Best_comment": submission.comments[0].body if submission.comments else "No comments",
+                    "best_reply": "MIA"  # Set a default or extract as needed
+                }
+                print("added post to post_data: " + str(post_data))
+                posts.append(post_data)
+        
+        self.post_data = posts  # Update the class attribute
+        print("resulting post_data is " + str(self.post_data))
+        return posts
+
+    def get_image_url(self, submission):
+        # Check if submission has a direct image URL
+        if submission.url.lower().endswith(('.png', '.jpg', '.jpeg', '.gif')):
+            return submission.url  # Direct image URL
+        elif hasattr(submission, 'media') and submission.media is not None:
+            return submission.media['oembed']['thumbnail_url']  # Use thumbnail if available
+        return None  # Return None if no valid image found
+
+    def create_data_folder(self):
+        today = date.today()
+        dt_string = today.strftime("%m%d%Y")
+        data_folder_path = os.path.join(self.data_path, f"{dt_string}/")
+        check_folder = os.path.isdir(data_folder_path)
+        # If folder doesn't exist, then create it.
+        if not check_folder:
+            os.makedirs(data_folder_path)
+
+    def download_image(self, url, save_path):
+        # Check if the URL is an image URL
+        if not url.lower().endswith(('.png', '.jpg', '.jpeg', '.gif')):
+            print(f"URL does not point to an image: {url}")
+            return None
+        try:
+            response = requests.get(url)
+            response.raise_for_status()  # Check for HTTP errors
+            image = Image.open(BytesIO(response.content))
+            image.save(save_path)
+            return save_path
+        except Exception as e:
+            print(f"Error downloading image from {url}: {e}")
+            return None
+
+
+    def save_image(self, post, scale=(720, 1280)):
+        image_url = post['image_path']
+        local_path = os.path.join('images', f"{post['id']}.jpg")
+        os.makedirs(os.path.dirname(local_path), exist_ok=True)
+        local_image_path = self.download_image(image_url, local_path)
+
+        if local_image_path:
+            post['image_path'] = local_image_path
+
+this python file ./main.py
+"""
+This is the main loop file for our AutoTube Bot!
+
+Quick notes!
+- Currently it's set to try and post a video then sleep for a day.
+- You can change the size of the video currently it's set to post shorts.
+    * Do this by adding a parameter of scale to the image_save function.
+    * scale=(width,height)
+"""
+
+from datetime import date
+import time
+from utils.CreateMovie import CreateMovie, GetDaySuffix
+from utils.RedditBot import RedditBot
+from utils.upload_video import upload_video
+
+#Create Reddit Data Bot
+redditbot = RedditBot()
+
+# Leave if you want to run it 24/7
+while True:
+
+    # Gets our new posts pass if image related subs. Default is memes
+    posts = redditbot.get_posts("askreddit")
+
+    # Create folder if it doesn't exist
+    redditbot.create_data_folder()
+
+    # Go through posts and find 5 that will work for us.
+    for post in posts:
+        redditbot.save_image(post)
+
+    # Wanted a date in my titles so added this helper
+    DAY = date.today().strftime("%d")
+    DAY = str(int(DAY)) + GetDaySuffix(int(DAY))
+    dt_string = date.today().strftime("%A %B") + f" {DAY}"
+
+    # Save images locally
+    for post in redditbot.post_data:
+        redditbot.save_image(post)
+
+    if redditbot.post_data and any(post['image_path'] for post in redditbot.post_data):
+        CreateMovie.CreateMP4(redditbot.post_data)
+    else:
+        print("No valid images to create a video.")
+
+
+    # Video info for YouTube.
+    # This example uses the first post title.
+    video_data = {
+            "file": "video.mp4",
+            "title": f"{redditbot.post_data[0]['title']} - Dankest memes and comments {dt_string}!",
+            "description": "#shorts\nGiving you the hottest memes of the day with funny comments!",
+            "keywords":"meme,reddit,Dankestmemes",
+            "privacyStatus":"public"
+    }
+
+    print(video_data["title"])
+    print("Posting Video in 5 minutes...")
+    time.sleep(60 * 5)
+    upload_video(video_data)
+
+    # Sleep until ready to post another video!
+    time.sleep(60 * 60 * 24 - 1)
+
+
