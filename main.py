@@ -44,7 +44,9 @@ while counter < 2:
     # Patch mp3 and mp4 together into resulting video file
     if redditbot.post_data and any(post['image_path'] for post in redditbot.post_data):
         # Create voiceover mp3 file
-        voiceover_string = redditbot.post_data.selftext
+        voiceover_string = redditbot.post_data[counter - 1]['selftext'] if redditbot.post_data and 'selftext' in redditbot.post_data[0] else ""
+        if voiceover_string == "":
+            raise ValueError("The " + str(counter - 1) + " does not contain a 'selftext' or the post data is empty.")
         language = "en"
         voiceover = gTTS(text = voiceover_string, lang=language, slow=False)
         voiceover.save("output-" + str(counter) + ".mp3")
